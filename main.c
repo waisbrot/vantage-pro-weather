@@ -27,6 +27,7 @@
 #include <termios.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <syslog.h>
 #include <unistd.h>
 #include <math.h>
@@ -64,7 +65,7 @@ static int WakeUp(int nfd);
 static int ReadNextChar(int fdser, char *pChar);
 static void Delay(int secs, long microsecs);
 static int ReadToBuffer(int fdser, char *pszBuffer, int nBufSize);
-
+static void Debug(const char *format, ...);
 
 
 /*--------------------------------------------------------------------------
@@ -108,8 +109,7 @@ int main(int argc, char *argv[])
         exit(2);
     }
 
-    if(bVerbose)
-        printf("Opening Serial Port %s...\n", szttyDevice);
+    Debug("Opening Serial Port %s...\n", szttyDevice);
     fdser = open(szttyDevice, O_RDWR | O_NOCTTY );
     if (fdser < 0) {
         perror("vproweather: Problem opening serial device, check device name.");
@@ -141,8 +141,7 @@ int main(int argc, char *argv[])
 
 
     /* wake up the station */
-    if(bVerbose)
-        printf("Waking up weather station...\n");
+    Debug("Waking up weather station...\n");
     if(!WakeUp(fdser)) {
         fprintf(stderr, "vproweather: Can't wake up weather station- no response.\n");
         exit(2);
@@ -155,8 +154,7 @@ int main(int argc, char *argv[])
 
     /* turn on backlite */
     if(bBKLOn) {
-        if(bVerbose)
-            printf("Turning Backlite ON...\n");
+        Debug("Turning Backlite ON...\n");
         while(ReadNextChar(fdser, &ch));    /* clear channel and delay */
         while(ReadNextChar(fdser, &ch));    /* clear channel and delay */
         strcpy(szSerBuffer, "LAMPS 1\n");   /* make Davis cmd string */
@@ -169,8 +167,7 @@ int main(int argc, char *argv[])
 
     /* turn off backlite */
     if(bBKLOff) {
-        if(bVerbose)
-            printf("Turning Backlite OFF...\n");
+        Debug("Turning Backlite OFF...\n");
         while(ReadNextChar(fdser, &ch));        /* clear channel and delay */
         strcpy(szSerBuffer, "LAMPS 0\n");   /* make Davis cmd string */
         if(write(fdser, &szSerBuffer, strlen(szSerBuffer)) != strlen(szSerBuffer))
@@ -182,8 +179,7 @@ int main(int argc, char *argv[])
 
     /* Get firmware version strings */
     if(bVer) {
-        if(bVerbose)
-            printf("Getting firmware string...\n");
+        Debug("Getting firmware string...\n");
         while(ReadNextChar(fdser, &ch));        /* clear channel and delay */
         strcpy(szSerBuffer, "VER\n");       /* make Davis cmd string */
         if(write(fdser, &szSerBuffer, strlen(szSerBuffer)) != strlen(szSerBuffer))
@@ -201,8 +197,7 @@ int main(int argc, char *argv[])
 
     /* Get model number */
     if(bModel) {
-        if(bVerbose)
-            printf("Getting model number code byte...\n");
+        Debug("Getting model number code byte...\n");
         while(ReadNextChar(fdser, &ch));        /* clear channel and delay */
         strcpy(szSerBuffer, "WRD\022\115\n");   /* make Davis cmd string */
         if(write(fdser, &szSerBuffer, strlen(szSerBuffer)) != strlen(szSerBuffer))
@@ -240,8 +235,7 @@ int main(int argc, char *argv[])
 
     /* Get weather station time */
     if(bGetTime) {
-        if(bVerbose)
-            printf("Getting weather station time...\n");
+        Debug("Getting weather station time...\n");
         while(ReadNextChar(fdser, &ch));    /* clear channel and delay */
         strcpy(szSerBuffer, "GETTIME\n");   /* make Davis cmd string */
         if(write(fdser, &szSerBuffer, strlen(szSerBuffer)) != strlen(szSerBuffer))
@@ -250,13 +244,7 @@ int main(int argc, char *argv[])
             exit(2);
         }
         nCnt = ReadToBuffer(fdser, szSerBuffer, sizeof(szSerBuffer));
-        if(bVerbose) {
-            printf("Got %d characters...", nCnt);
-            if(nCnt != 9)
-                printf("Bad\n");
-            else
-                printf("Good\n");
-        }
+        Debug("Got %d characters... %s", nCnt, nCnt == 9 ? "Good\n" : "Bad\n");
         if(nCnt != 9) {
             fprintf(stderr, "vproweather: Didn't get all data. Try changing delay parameter.\n");
             exit(2);
@@ -265,17 +253,15 @@ int main(int argc, char *argv[])
             fprintf(stderr,"vproweather: CRC failure %d.\n", nCnt);
             exit(2);
         }
-        else if (bVerbose)
-            printf("CRC verified good on TIME packet.\n");
 
+        Debug("CRC verified good on TIME packet.\n");
         PrintTime(szSerBuffer);                 /* ...and to stdout */
     }
 
 
     /* Set weather station time */
     if(bSetTime) {
-        if(bVerbose)
-            printf("Setting weather station time...\n");
+        Debug("Setting weather station time...\n");
         while(ReadNextChar(fdser, &ch));    /* clear channel and delay */
         strcpy(szSerBuffer, "SETTIME\n");   /* make Davis cmd string */
         if(write(fdser, &szSerBuffer, strlen(szSerBuffer)) != strlen(szSerBuffer))
@@ -288,9 +274,8 @@ int main(int argc, char *argv[])
             fprintf(stderr, "vproweather: Failed to get ACK.\n");
             exit(2);
         }
-        else if(bVerbose)
-            printf("Received ACK, sending system time...\n");
 
+        Debug("Received ACK, sending system time...\n");
 
         time(&tt);
         stm = *localtime(&tt);              /* get system time */
@@ -319,16 +304,15 @@ int main(int argc, char *argv[])
             fprintf(stderr, "vproweather: CRC Failed, didn't get ACK (%d)\n", ch);
             exit(2);
         }
-        else if(bVerbose)
-            printf("Received ACK, CRC good, time is now set.\n");
+
+        Debug("Received ACK, CRC good, time is now set.\n");
     }
 
 
 
     /* Get highs/lows data set */
     if(bGetHLD) {
-        if(bVerbose)
-            printf("Getting highs/lows data set...\n");
+        Debug("Getting highs/lows data set...\n");
 
         while(ReadNextChar(fdser, &ch));        /* clear channel and delay */
         strcpy(szSerBuffer, "HILOWS\n");        /* make Davis cmd string */
@@ -339,13 +323,7 @@ int main(int argc, char *argv[])
         }
         tcdrain(fdser);
         nCnt = ReadToBuffer(fdser, szSerBuffer, sizeof(szSerBuffer));
-        if(bVerbose) {
-            printf("Got %d characters...", nCnt);
-            if(nCnt != 439)
-                printf("Bad\n");
-            else
-                printf("Good\n");
-        }
+        Debug("Got %d characters... %s", nCnt, nCnt == 439 ? "Good\n" : "Bad\n");
         if(nCnt != 439) {
             fprintf(stderr,"vproweather: Didn't get all data. Try changing delay parameter.\n");
             exit(2);
@@ -354,8 +332,8 @@ int main(int argc, char *argv[])
             fprintf(stderr,"vproweather: CRC failure %d.\n", nCnt);
             exit(2);
         }
-        else if (bVerbose)
-            printf("CRC verified good on HILOWS packet.\n");
+
+        Debug("CRC verified good on HILOWS packet.\n");
 
         GetHLData(szSerBuffer);             /* get data to struct */
         PrintHLData();                      /* ...and to stdout */
@@ -365,8 +343,7 @@ int main(int argc, char *argv[])
 
     /* Get Graph data sets */
     if(bGetGD) {
-        if(bVerbose)
-            printf("Getting graph data set...\n");
+        Debug("Getting graph data set...\n");
 
         while(ReadNextChar(fdser, &ch));        /* clear channel and delay */
         strcpy(szSerBuffer, "GETEE\n");         /* make Davis cmd string */
@@ -377,13 +354,7 @@ int main(int argc, char *argv[])
         }
         tcdrain(fdser);
         nCnt = ReadToBuffer(fdser, szSerBuffer, sizeof(szSerBuffer));
-        if(bVerbose) {
-            printf("Got %d characters...", nCnt);
-            if(nCnt != 4099)
-                printf("Bad\n");
-            else
-                printf("Good\n");
-        }
+        Debug("Got %d characters... %s", nCnt, nCnt == 4099 ? "Good\n" : "Bad\n");
         if(nCnt != 4099) {
             fprintf(stderr, "vproweather: Didn't get all data. Try changing delay parameter.\n");
             exit(2);
@@ -392,8 +363,7 @@ int main(int argc, char *argv[])
             fprintf(stderr, "vproweather: CRC failure %d.\n", nCnt);
             exit(2);
         }
-        else if (bVerbose)
-            printf("CRC verified good on full EEPROM packet.\n");
+        Debug("CRC verified good on full EEPROM packet.\n");
 
         PrintGDData((uint8_t*)szSerBuffer);         /* ...and to stdout */
     }
@@ -402,8 +372,7 @@ int main(int argc, char *argv[])
 
     /* Get real time data set (Davis LOOP data) */
     if(bGetRTD) {
-        if(bVerbose)
-            printf("Getting real time data set...\n");
+        Debug("Getting real time data set...\n");
 
         while(ReadNextChar(fdser, &ch));        /* clear channel and delay */
         strcpy(szSerBuffer, "LOOP 1\n");        /* make Davis cmd string */
@@ -414,13 +383,7 @@ int main(int argc, char *argv[])
         }
         tcdrain(fdser);
         nCnt = ReadToBuffer(fdser, szSerBuffer, sizeof(szSerBuffer));
-        if(bVerbose) {
-            printf("Got %d characters...", nCnt);
-            if(nCnt != 100)
-                printf("Bad\n");
-            else
-                printf("Good\n");
-        }
+        Debug("Got %d characters... %s", nCnt, nCnt == 100 ? "Good\n" : "Bad\n");
         if(nCnt != 100) {
             fprintf(stderr, "vproweather: Didn't get all data. Try changing delay parameter.\n");
             exit(2);
@@ -429,8 +392,7 @@ int main(int argc, char *argv[])
             fprintf(stderr, "vproweather: CRC failure %d.\n", nCnt);
             exit(2);
         }
-        else if (bVerbose)
-            printf("CRC verified good on LOOP packet.\n");
+        Debug("CRC verified good on LOOP packet.\n");
 
         GetRTData(szSerBuffer);             /* get data to struct */
         PrintRTData();                      /* ...and to stdout */
@@ -447,6 +409,19 @@ int main(int argc, char *argv[])
 }
 
 
+/*--------------------------------------------------------------------------
+    Debug
+    Print debug info when the verbose flag is active.
+----------------------------------------------------------------------------*/
+void Debug(const char *format, ...)
+{
+    va_list ap;
+    if(bVerbose) {
+        va_start(ap, format);
+        vfprintf(stderr, format, ap);
+        va_end(ap);
+    }
+}
 
 
 
@@ -560,8 +535,7 @@ int WakeUp(int nfd)
         }
         if(ReadNextChar(nfd, &ch))      /* read a char */
         {
-            if(bVerbose)
-                printf("Weather station woke up after %d retries\n", i+1);
+            Debug("Weather station woke up after %d retries\n", i+1);
             return -1;                  /* okay, its awake now */
         }
     }
