@@ -460,6 +460,47 @@ void PrintRTData(void)
     printf("%s = %s\n", _SUNSET, TimeConvert(rcd.wSunset));
 }
 
+void PrintRTDataJSON(void)
+{
+    printf("{");
+        printf("\"barometer\":{");
+            printf("\"trend\": %d,", rcd.cP);
+            printf("\"current\": %2.2f", rcd.wBarometer / 1000.0);
+        printf("},");
+        printf("\"temperature\":{");
+            printf("\"inside\": %.1f,", ((int16_t)rcd.wInsideTemp) / 10.0);
+            printf("\"outside\": %.1f", ((int16_t)rcd.wOutsideTemp) / 10.0);
+        printf("},");
+        printf("\"humidity\":{");
+            printf("\"inside\": %d,", rcd.yInsideHum);
+            printf("\"outside\": %d", rcd.yOutsideHum);
+        printf("},");
+        printf("\"wind\":{");
+            printf("\"instant_speed\": %d,", rcd.yWindSpeed);
+            printf("\"average_speed\": %d,", rcd.yAvgWindSpeed);
+            printf("\"direction\": %d", rcd.wWindDir);
+        printf("},");
+        printf("\"rain\":{");
+            printf("\"rate\": %.2f,", rcd.wRainRate / 100.0);
+            printf("\"storm_total\": %.2f,", rcd.wStormRain / 100.0);
+            printf("\"storm_start\": \"");
+            PrintDate(rcd.wStormStart);
+            printf("\",");
+            printf("\"daily\": %.2f,", rcd.wRainDay / 100.0);
+            printf("\"monthly\": %.2f,", rcd.wRainMonth / 100.0);
+            printf("\"yearly\": %.2f", rcd.wRainYear / 100.0);
+        printf("},");
+        printf("\"battery\":{");
+            printf("\"xmit\": %d,", rcd.yXmitBatt);
+            printf("\"voltage\": %1f", ((rcd.wBattLevel * 300)/512)/100.0);
+        printf("},");
+        printf("\"forecast\":{");
+            printf("\"rule\": %d,", rcd.yRule);
+            printf("\"icon\": %d,", rcd.yForeIcon);
+            printf("\"explanation\": \"%s\"", ForecastString(rcd.yRule));
+        printf("}");
+    printf("}");
+}
 
 
 /*--------------------------------------------------------------------------

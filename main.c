@@ -53,6 +53,7 @@ static bool bGetTime;                   /* Get time flag */
 static bool bSetTime;                   /* Set time flag */
 static bool bHTML;                      /* html substitution flag */
 static int8_t yDelay;                   /* Read wait time */
+static bool bJSON;                      /* Output in JSON format */
 
 static char szSerBuffer[4200];          /* serial read/write buffer */
 static char szSWriteErr[] = "Serial Port Write Error";
@@ -98,6 +99,7 @@ int main(int argc, char *argv[])
         printf(" -r, --version         Query for Davis firmware version string.\n");
         printf(" -m, --model           Query for weather station model name.\n");
         printf(" -d, --delay=num       Cmd Delay in 1/10ths seconds. Default is 10 (1 sec).\n");
+        printf(" -j, --json            Output in JSON format instead of human-readable.\n");
         printf(" -v, --verbose         Verbose mode.\n");
         printf(" Device                Serial Device. Required parameter.\n");
         printf("\n");
@@ -189,8 +191,7 @@ int main(int argc, char *argv[])
         tcdrain(fdser);
         Delay(1, 0L);
         nCnt = ReadToBuffer(fdser, szSerBuffer, sizeof(szSerBuffer));
-        if(bVerbose)
-            printf("Got %d characters\n", nCnt);
+        Debug("Got %d characters\n", nCnt);
         *(szSerBuffer+nCnt) = '\0';
         printf("Version Info: %s\n", szSerBuffer);
     }
@@ -395,7 +396,12 @@ int main(int argc, char *argv[])
         Debug("CRC verified good on LOOP packet.\n");
 
         GetRTData(szSerBuffer);             /* get data to struct */
-        PrintRTData();                      /* ...and to stdout */
+        if (bJSON) {
+            PrintRTDataJSON();
+            printf("\n");
+        } else {
+            PrintRTData();                      /* ...and to stdout */
+        }
     }
 
     /* all done, exit */
@@ -448,6 +454,7 @@ int GetParms(int argc, char *argv[])
         { "set-time",       no_argument,    0,  's' },
         { "verbose",        no_argument,    0,  'v' },
         { "delay",          required_argument,  0,  'd' },
+        { "json",           no_argument,    0, 'j' },
         { NULL,             0,              NULL,   0 }
     };
 
@@ -467,11 +474,12 @@ int GetParms(int argc, char *argv[])
     bGetTime = false;
     bSetTime = false;
     yDelay = 10;
+    bJSON = false;
 
     if(argc == 1)
         return 0;               /* no parms at all */
 
-    while ((c = getopt_long(argc, argv, "ofrmxlgvtsb:d:", longopts, NULL )) != EOF) {
+    while ((c = getopt_long(argc, argv, "ofrmxlgvtsb:d:j", longopts, NULL )) != EOF) {
         switch (c) {
             case 'o': bBKLOn  = true; break;
             case 'f': bBKLOff = true; break;
@@ -483,6 +491,7 @@ int GetParms(int argc, char *argv[])
             case 'v': bVerbose= true; break;
             case 't': bGetTime= true; break;
             case 's': bSetTime= true; break;
+            case 'j': bJSON   = true; break;
 
             case 'd':
                 /* Get delay time */

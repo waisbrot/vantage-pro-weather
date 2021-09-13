@@ -33,6 +33,7 @@ extern int CheckCRC(int nCnt, char *pData);
 extern void GetRTData(char *szData);
 extern void GetHLData(char *szData);
 extern void PrintRTData(void);
+extern void PrintRTDataJSON(void);
 extern void PrintHLData(void);
 extern void PrintGDData(uint8_t * pData);
 extern void PrintTime(char *szData);
