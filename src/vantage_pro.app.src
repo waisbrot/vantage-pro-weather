@@ -1,0 +1,19 @@
+{application, vantage_pro,
+ [{description, "An OTP application"},
+  {vsn, "0.1.0"},
+  {registered, []},
+  {mod, {vantage_pro_app, []}},
+  {applications,
+   [
+    kernel
+    ,stdlib
+    ,srly
+    ,prometheus
+    ,cowboy
+   ]},
+  {env,[]},
+  {modules, []},
+
+  {licenses, ["GNU Affero General Public License 3"]},
+  {links, []}
+ ]}.

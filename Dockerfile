@@ -1,9 +1,10 @@
-FROM gcc as build
-WORKDIR /src
-COPY *.c *.h Makefile /src/
-RUN make
-
-FROM python:3
-COPY --from=build /src/vproweather /bin/
-COPY prometheus.py /bin/
-RUN pip install prometheus_client
+FROM erlang:24
+WORKDIR /app
+COPY rebar.config rebar.lock ./
+#RUN rebar3 get-deps
+COPY _checkouts _checkouts
+RUN rebar3 compile
+COPY src src
+RUN rebar3 compile
+COPY config config
+CMD ["rebar3", "shell"]
