@@ -5,7 +5,7 @@ Windows. However, [Joe Jaworski](http://www.joejaworski.com) wrote a simple comm
 
 ## Original code
 
-The original code from Joe Jaworski's project: http://www.joejaworski.com/weather/ is available here under the tag `1.1.0` or (with some small enhancements by me) the `c` branch.
+The original code from Joe Jaworski's project: <http://www.joejaworski.com/weather/> is available here under the tag `1.1.0` or (with some small enhancements by me) the `c` branch.
 
 ## Erlang code
 
