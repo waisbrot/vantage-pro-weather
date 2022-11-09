@@ -7,6 +7,8 @@
    [
     kernel
     ,stdlib
+    ,flatlog
+    ,stillir
     ,srly
     ,prometheus
     ,cowboy

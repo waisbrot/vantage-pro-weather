@@ -5,4 +5,5 @@ RUN rebar3 compile
 COPY src src
 RUN rebar3 compile
 COPY config config
-CMD ["rebar3", "shell"]
+RUN rebar3 release
+CMD ["./_build/default/rel/main_release/bin/main_release", "foreground"]
